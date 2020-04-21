@@ -1,0 +1,32 @@
+From 987fee49dc1750082cfe6e24833379233777a13b Mon Sep 17 00:00:00 2001
+From: Tobias Stoeckmann <tobias@stoeckmann.org>
+Date: Thu, 19 Oct 2017 22:18:18 +0200
+Subject: [PATCH] Avoid out of boundary read access
+
+If the environment variable HOME is empty, XauFileName triggers an
+out of boundary read access (name[1]). If HOME consists of a single
+character relative path, the output becomes unexpected, because
+"HOME=a" leads to "a.Xauthority" instead of "a/.Xauthority". Granted,
+a relative HOME path leads to trouble in general, the code should
+properly return "a/.Xauthority" nonetheless.
+
+Signed-off-by: Tobias Stoeckmann <tobias@stoeckmann.org>
+Reviewed-by: Alan Coopersmith <alan.coopersmith@oracle.com>
+
+Origin: https://gitlab.freedesktop.org/xorg/lib/libxau/-/commit/987fee49dc17
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1559650
+Forwarded: not-needed
+Last-Update: 2020-04-21
+
+Index: libxau_1.0.8-1ubuntu1/AuFileName.c
+===================================================================
+--- libxau_1.0.8-1ubuntu1.orig/AuFileName.c
++++ libxau_1.0.8-1ubuntu1/AuFileName.c
+@@ -81,6 +81,6 @@ XauFileName (void)
+ 	bsize = size;
+     }
+     snprintf (buf, bsize, "%s%s", name,
+-              slashDotXauthority + (name[1] == '\0' ? 1 : 0));
++              slashDotXauthority + (name[0] == '/' && name[1] == '\0' ? 1 : 0));
+     return buf;
+ }
